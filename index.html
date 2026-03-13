@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>42-Day Fitness Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#070b14; --s1:#0e1525; --s2:#131e33; --s3:#1a2740;
+  --b1:#1e2d47; --b2:#263550;
+  --blue:#3b82f6; --blue2:#1d4ed8; --blueg:rgba(59,130,246,0.13);
+  --green:#22c55e; --greeng:rgba(34,197,94,0.11);
+  --red:#ef4444; --redg:rgba(239,68,68,0.11);
+  --amber:#f59e0b; --amberg:rgba(245,158,11,0.11);
+  --teal:#14b8a6; --tealg:rgba(20,184,166,0.11);
+  --purple:#a855f7;
+  --t1:#e2e8f0; --t2:#94a3b8; --t3:#64748b;
+  --font:'Syne',sans-serif; --mono:'JetBrains Mono',monospace;
+  --r:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:0 16px 80px;}
+.hdr{padding:32px 0 22px;border-bottom:1px solid var(--b1);margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;}
+.hdr-l h1{font-size:clamp(20px,3.5vw,30px);font-weight:800;letter-spacing:-0.8px;line-height:1.1;}
+.hdr-l h1 em{color:var(--blue);font-style:normal;}
+.hdr-l p{color:var(--t3);font-size:11.5px;margin-top:5px;font-family:var(--mono);}
+.hdr-r{text-align:right;}
+.day-badge{font-size:38px;font-weight:800;color:var(--blue);line-height:1;font-family:var(--mono);}
+.day-badge small{font-size:11px;color:var(--t3);display:block;margin-top:2px;}
+.prog-bar-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.prog-bg{flex:1;min-width:160px;background:var(--b1);border-radius:99px;height:7px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--teal));border-radius:99px;transition:width .6s ease;}
+.prog-txt{font-family:var(--mono);font-size:12px;color:var(--t2);white-space:nowrap;}
+.prog-pct{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);white-space:nowrap;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px;margin-bottom:18px;}
+.sc{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:11px 13px;position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.bl::before{background:var(--blue);}.sc.gr::before{background:var(--green);}
+.sc.am::before{background:var(--amber);}.sc.tl::before{background:var(--teal);}
+.sc.rd::before{background:var(--red);}.sc.pu::before{background:var(--purple);}
+.sc-lbl{font-size:9px;color:var(--t3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;}
+.sc-val{font-size:20px;font-weight:700;margin-top:3px;line-height:1;}
+.sc-val.bl{color:var(--blue);}.sc-val.gr{color:var(--green);}
+.sc-val.am{color:var(--amber);}.sc-val.tl{color:var(--teal);}
+.sc-val.rd{color:var(--red);}.sc-val.pu{color:var(--purple);}
+.sc-sub{font-size:9px;color:var(--t3);margin-top:2px;font-family:var(--mono);}
+.cal-wrap{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;margin-bottom:18px;}
+.sec-lbl{font-size:10px;font-family:var(--mono);color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
+.cal-months{display:flex;flex-direction:column;gap:8px;}
+.cal-month-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.cal-month-name{font-family:var(--mono);font-size:10px;color:var(--t3);width:26px;flex-shrink:0;}
+.cal-days{display:flex;gap:4px;flex-wrap:wrap;}
+.cd{width:30px;height:30px;border-radius:6px;border:1px solid var(--b1);background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-family:var(--mono);font-size:10px;color:var(--t3);position:relative;user-select:none;}
+.cd:hover:not(.future){border-color:var(--blue);color:var(--t1);transform:scale(1.1);}
+.cd.today{border-color:var(--blue);color:var(--blue);font-weight:700;box-shadow:0 0 10px var(--blueg);}
+.cd.selected{background:var(--blue2);border-color:var(--blue);color:#fff;}
+.cd.has-data::after{content:'';position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--amber);}
+.cd.full::after{background:var(--green);box-shadow:0 0 4px var(--green);}
+.cd.future{opacity:.28;cursor:default;}
+.cd.future:hover{transform:none;border-color:var(--b1);}
+.date-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.nav-btn{background:var(--s2);border:1px solid var(--b1);color:var(--t2);border-radius:6px;padding:7px 13px;cursor:pointer;font-family:var(--mono);font-size:12px;transition:all .15s;}
+.nav-btn:hover{border-color:var(--blue);color:var(--blue);}
+.nav-btn.today-btn{border-color:var(--blue);color:var(--blue);}
+.date-disp{font-family:var(--mono);font-size:13px;color:var(--t1);font-weight:600;flex:1;text-align:center;}
+.phase-badge{font-size:10px;font-family:var(--mono);padding:4px 10px;border-radius:99px;font-weight:600;}
+.ph1{background:var(--greeng);color:var(--green);border:1px solid var(--green);}
+.ph2{background:var(--blueg);color:var(--blue);border:1px solid var(--blue);}
+.tcard{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.tcard-hdr{background:var(--s2);border-bottom:1px solid var(--b1);padding:12px 16px;display:flex;align-items:center;gap:8px;}
+.tcard-hdr .icon{font-size:15px;}
+.tcard-hdr h3{font-size:13px;font-weight:700;}
+.tcard-hdr .badge{margin-left:auto;font-size:10px;font-family:var(--mono);color:var(--t3);}
+.tcard-body{padding:14px 16px;display:flex;flex-direction:column;gap:11px;}
+.field-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px;}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:9.5px;font-family:var(--mono);color:var(--t3);text-transform:uppercase;letter-spacing:.4px;}
+.field input,.field select,.field textarea{background:var(--s3);border:1px solid var(--b1);color:var(--t1);border-radius:6px;padding:7px 9px;font-family:var(--mono);font-size:12px;outline:none;transition:border-color .15s;width:100%;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);}
+.field textarea{resize:vertical;min-height:60px;}
+.field input[type=range]{padding:0;height:6px;accent-color:var(--blue);}
+.range-row{display:flex;align-items:center;gap:9px;}
+.range-val{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--blue);min-width:26px;text-align:center;}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:6px;}
+.chk-item{display:flex;align-items:flex-start;gap:8px;cursor:pointer;padding:7px 9px;border-radius:6px;border:1px solid var(--b1);background:var(--s2);transition:all .15s;}
+.chk-item:hover{border-color:var(--b2);}
+.chk-item.checked{border-color:var(--green);background:var(--greeng);}
+.chk-item.checked .chk-box{background:var(--green);border-color:var(--green);}
+.chk-item.checked .chk-box::after{opacity:1;}
+.chk-box{width:15px;height:15px;border:1.5px solid var(--b2);border-radius:3px;flex-shrink:0;margin-top:1px;position:relative;transition:all .15s;}
+.chk-box::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;opacity:0;transition:opacity .15s;}
+.chk-txt{font-size:11px;color:var(--t2);line-height:1.4;}
+.chk-item.checked .chk-txt{color:var(--t1);}
+.score-section{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.score-ring-wrap{position:relative;width:78px;height:78px;flex-shrink:0;}
+.score-ring-wrap svg{transform:rotate(-90deg);}
+.score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.score-num{font-size:20px;font-weight:800;font-family:var(--mono);}
+.score-max{font-size:9px;color:var(--t3);font-family:var(--mono);}
+.score-breakdown{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:5px;}
+.score-item{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10.5px;padding:4px 7px;background:var(--s2);border-radius:5px;}
+.score-item span:first-child{color:var(--t3);}
+.score-item span:last-child{font-weight:600;}
+.rhinitis-scale{display:flex;gap:4px;align-items:center;flex-wrap:wrap;}
+.rs-btn{padding:5px 9px;border-radius:5px;border:1px solid var(--b1);background:var(--s2);color:var(--t3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;min-width:30px;text-align:center;}
+.rs-btn.sel0,.rs-btn.sel1,.rs-btn.sel2,.rs-btn.sel3{background:var(--greeng);border-color:var(--green);color:var(--green);}
+.rs-btn.sel4,.rs-btn.sel5,.rs-btn.sel6{background:var(--amberg);border-color:var(--amber);color:var(--amber);}
+.rs-btn.sel7,.rs-btn.sel8,.rs-btn.sel9,.rs-btn.sel10{background:var(--redg);border-color:var(--red);color:var(--red);}
+.water-track{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.water-btn{width:32px;height:38px;border-radius:6px;border:2px solid var(--b1);background:var(--s2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:17px;transition:all .15s;filter:grayscale(1);}
+.water-btn.filled{filter:none;border-color:var(--blue);background:var(--blueg);}
+.water-btn:hover{transform:scale(1.08);}
+.water-lbl{font-family:var(--mono);font-size:11px;color:var(--t2);}
+.ex-row{display:grid;grid-template-columns:1fr 55px 75px;gap:7px;align-items:center;padding:6px 0;border-bottom:1px solid var(--b1);}
+.ex-row:last-child{border-bottom:none;}
+.ex-name{font-size:11.5px;color:var(--t2);}
+.ex-input{background:var(--s3);border:1px solid var(--b1);color:var(--t1);border-radius:5px;padding:5px 6px;font-family:var(--mono);font-size:11px;width:100%;outline:none;text-align:center;}
+.ex-input:focus{border-color:var(--blue);}
+.ex-hdr{display:grid;grid-template-columns:1fr 55px 75px;gap:7px;padding:4px 0;border-bottom:1px solid var(--b2);}
+.ex-hdr span{font-size:9px;font-family:var(--mono);color:var(--t3);text-transform:uppercase;text-align:center;}
+.ex-hdr span:first-child{text-align:left;}
+.meal-row{display:grid;grid-template-columns:85px 1fr 65px;gap:7px;align-items:start;padding:7px 0;border-bottom:1px solid var(--b1);}
+.meal-row:last-child{border-bottom:none;}
+.meal-name{font-size:10.5px;color:var(--t3);font-family:var(--mono);padding-top:7px;}
+.meal-hdr{display:grid;grid-template-columns:85px 1fr 65px;gap:7px;padding:3px 0;border-bottom:1px solid var(--b2);margin-bottom:3px;}
+.meal-hdr span{font-size:9px;font-family:var(--mono);color:var(--t3);text-transform:uppercase;}
+.phase-info{background:var(--s2);border:1px solid var(--b1);border-left:3px solid var(--green);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:11.5px;color:var(--t2);line-height:1.7;}
+.phase-info strong{color:var(--t1);}
+.save-wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px;border-top:1px solid var(--b1);background:var(--s2);}
+.save-btn{background:linear-gradient(135deg,var(--blue2),var(--blue));color:#fff;border:none;border-radius:8px;padding:9px 26px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.save-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--blueg);}
+.save-status{font-family:var(--mono);font-size:11px;color:var(--green);}
+.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:18px;}
+.chart-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;}
+.chart-title{font-size:10px;font-family:var(--mono);color:var(--t2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.sparkline{display:flex;align-items:flex-end;gap:3px;height:56px;}
+.spark-bar{flex:1;border-radius:3px 3px 0 0;transition:height .3s ease;min-height:3px;position:relative;cursor:pointer;}
+.spark-bar:hover::before{content:attr(data-val);position:absolute;top:-20px;left:50%;transform:translateX(-50%);background:var(--s3);padding:2px 6px;border-radius:4px;font-size:9px;font-family:var(--mono);color:var(--t1);white-space:nowrap;border:1px solid var(--b2);z-index:10;}
+.spark-x{display:flex;gap:3px;margin-top:3px;}
+.spark-x span{flex:1;font-size:8px;font-family:var(--mono);color:var(--t3);text-align:center;}
+.remind-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;}
+.remind-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:9px;}
+.remind-item{padding:10px 11px;border-radius:7px;border:1px solid var(--b1);}
+.remind-item.do{background:var(--greeng);border-color:rgba(34,197,94,0.25);}
+.remind-item.avoid{background:var(--redg);border-color:rgba(239,68,68,0.25);}
+.remind-item .ri-title{font-size:9.5px;font-family:var(--mono);margin-bottom:5px;font-weight:600;}
+.remind-item.do .ri-title{color:var(--green);}
+.remind-item.avoid .ri-title{color:var(--red);}
+.remind-item ul{list-style:none;display:flex;flex-direction:column;gap:3px;}
+.remind-item ul li{font-size:11px;color:var(--t2);display:flex;gap:5px;align-items:flex-start;line-height:1.4;}
+.remind-item.do ul li::before{content:'✓';color:var(--green);font-size:10px;margin-top:1px;flex-shrink:0;}
+.remind-item.avoid ul li::before{content:'✗';color:var(--red);font-size:10px;margin-top:1px;flex-shrink:0;}
+.tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.tab{padding:7px 15px;border-radius:6px;border:1px solid var(--b1);background:var(--s1);color:var(--t3);font-family:var(--mono);font-size:11px;cursor:pointer;transition:all .15s;}
+.tab:hover{border-color:var(--b2);color:var(--t2);}
+.tab.active{background:var(--blue2);border-color:var(--blue);color:#fff;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--green);color:#fff;padding:9px 18px;border-radius:8px;font-family:var(--mono);font-size:12px;font-weight:600;z-index:999;transform:translateY(80px);transition:transform .3s ease;pointer-events:none;}
+.toast.show{transform:translateY(0);}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--s1);}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px;}
+@media(max-width:580px){.field-row{grid-template-columns:1fr;}.meal-row,.meal-hdr{grid-template-columns:75px 1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="hdr-l">
+    <h1>42-Day <em>Recomposition</em> Tracker</h1>
+    <p>Mar 13 &rarr; Apr 23, 2026 &nbsp;|&nbsp; 25M &middot; 75kg &middot; 5'10" &nbsp;|&nbsp; Military Calisthenics &middot; Chronic Rhinitis</p>
+  </div>
+  <div class="hdr-r">
+    <div class="day-badge" id="dayBadge">Day —</div>
+    <small id="dayLabel">of 42</small>
+  </div>
+</div>
+
+<div class="prog-bar-wrap">
+  <span class="prog-txt">Overall Progress</span>
+  <div class="prog-bg"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+  <span class="prog-pct" id="progPct">0%</span>
+  <span class="prog-txt" id="progDays">Day 0 of 42</span>
+</div>
+
+<div class="stats">
+  <div class="sc bl"><div class="sc-lbl">Days Logged</div><div class="sc-val bl" id="daysLogged">0</div><div class="sc-sub">/ 42 days</div></div>
+  <div class="sc gr"><div class="sc-lbl">Avg Adherence</div><div class="sc-val gr" id="avgAdh">—</div><div class="sc-sub">score /100</div></div>
+  <div class="sc am"><div class="sc-lbl">Avg Protein</div><div class="sc-val am" id="avgProt">—</div><div class="sc-sub">g / day</div></div>
+  <div class="sc tl"><div class="sc-lbl">Avg Sleep</div><div class="sc-val tl" id="avgSleep">—</div><div class="sc-sub">hrs / night</div></div>
+  <div class="sc rd"><div class="sc-lbl">Avg Rhinitis</div><div class="sc-val rd" id="avgRhin">—</div><div class="sc-sub">score /10</div></div>
+  <div class="sc pu"><div class="sc-lbl">Workouts</div><div class="sc-val pu" id="workoutsDone">0</div><div class="sc-sub">sessions</div></div>
+</div>
+
+<div class="cal-wrap">
+  <div class="sec-lbl">📅 42-Day Calendar — tap any day &nbsp; <span style="color:var(--green)">● logged well</span> &nbsp; <span style="color:var(--amber)">● partial</span></div>
+  <div class="cal-months" id="calMonths"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('track')">📝 Daily Log</div>
+  <div class="tab" onclick="switchTab('progress')">📈 Progress</div>
+  <div class="tab" onclick="switchTab('remind')">🧠 Reminders</div>
+</div>
+
+<!-- ════ TAB: DAILY LOG ════ -->
+<div class="tab-content active" id="tab-track">
+
+  <div class="date-nav">
+    <button class="nav-btn" onclick="offsetDay(-1)">← Prev</button>
+    <div class="date-disp" id="dateDisp">—</div>
+    <span class="phase-badge ph1" id="phaseBadge">Phase 1</span>
+    <button class="nav-btn today-btn" onclick="goToday()">Today</button>
+    <button class="nav-btn" onclick="offsetDay(1)">Next →</button>
+  </div>
+
+  <div class="phase-info" id="phaseInfo"></div>
+
+  <!-- MORNING -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">🌅</span><h3>Morning Checklist</h3><span class="badge" id="morningScore">0/5</span></div>
+    <div class="tcard-body">
+      <div class="check-grid">
+        <label class="chk-item" onclick="toggleCheck(this,'morning','water_wake')"><div class="chk-box"></div><span class="chk-txt">Drank 300–500 ml water on waking</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'morning','nasal_rinse')"><div class="chk-box"></div><span class="chk-txt">Saline nasal rinse done</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'morning','no_screen')"><div class="chk-box"></div><span class="chk-txt">No screen for first 15 min</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'morning','weigh_in')"><div class="chk-box"></div><span class="chk-txt">Weighed self (fasted, post-toilet)</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'morning','medication')"><div class="chk-box"></div><span class="chk-txt">Rhinitis medication taken</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY METRICS -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">⚖️</span><h3>Body Metrics</h3></div>
+    <div class="tcard-body">
+      <div class="field-row">
+        <div class="field"><label>Body Weight (kg)</label><input type="number" step="0.1" id="metric_weight" placeholder="e.g. 75.0" oninput="autosave()"></div>
+        <div class="field"><label>Waist (cm)</label><input type="number" step="0.5" id="metric_waist" placeholder="e.g. 86" oninput="autosave()"></div>
+        <div class="field"><label>Chest (cm)</label><input type="number" step="0.5" id="metric_chest" placeholder="e.g. 96" oninput="autosave()"></div>
+        <div class="field"><label>Wake-up Time</label><input type="time" id="metric_waketime" oninput="autosave()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Max Push-ups (single set)</label><input type="number" id="metric_pushups" placeholder="e.g. 12" oninput="autosave()"></div>
+        <div class="field"><label>Plank Hold (seconds)</label><input type="number" id="metric_plank" placeholder="e.g. 45" oninput="autosave()"></div>
+        <div class="field"><label>Run/Walk Distance (km)</label><input type="number" step="0.1" id="metric_run" placeholder="e.g. 2.5" oninput="autosave()"></div>
+        <div class="field"><label>Resting HR (bpm)</label><input type="number" id="metric_hr" placeholder="e.g. 72" oninput="autosave()"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUTRITION -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">🍽️</span><h3>Nutrition Log</h3><span class="badge" id="proteinTotal">Protein: 0g / 130g target</span></div>
+    <div class="tcard-body">
+      <div class="meal-hdr"><span>Meal</span><span>What I ate</span><span>Protein g</span></div>
+      <div class="meal-row"><span class="meal-name">Breakfast</span><input class="ex-input" id="meal_breakfast" placeholder="3 eggs + oats + curd" oninput="autosave()"><input class="ex-input" type="number" id="prot_breakfast" placeholder="0" oninput="updateProtein()"></div>
+      <div class="meal-row"><span class="meal-name">Mid-morning</span><input class="ex-input" id="meal_midmorn" placeholder="Greek curd / fruit" oninput="autosave()"><input class="ex-input" type="number" id="prot_midmorn" placeholder="0" oninput="updateProtein()"></div>
+      <div class="meal-row"><span class="meal-name">Lunch</span><input class="ex-input" id="meal_lunch" placeholder="Chicken + dal + sabzi + roti" oninput="autosave()"><input class="ex-input" type="number" id="prot_lunch" placeholder="0" oninput="updateProtein()"></div>
+      <div class="meal-row"><span class="meal-name">Pre-workout</span><input class="ex-input" id="meal_prework" placeholder="Banana + soya chunks" oninput="autosave()"><input class="ex-input" type="number" id="prot_prework" placeholder="0" oninput="updateProtein()"></div>
+      <div class="meal-row"><span class="meal-name">Post-workout</span><input class="ex-input" id="meal_postwork" placeholder="Paneer / eggs / curd" oninput="autosave()"><input class="ex-input" type="number" id="prot_postwork" placeholder="0" oninput="updateProtein()"></div>
+      <div class="meal-row"><span class="meal-name">Dinner</span><input class="ex-input" id="meal_dinner" placeholder="Dal + sabzi + salad" oninput="autosave()"><input class="ex-input" type="number" id="prot_dinner" placeholder="0" oninput="updateProtein()"></div>
+    </div>
+  </div>
+
+  <!-- WATER -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">💧</span><h3>Water Intake</h3><span class="badge" id="waterBadge">0 / 3.5 L</span></div>
+    <div class="tcard-body">
+      <div style="margin-bottom:6px;font-size:11px;color:var(--t3);font-family:var(--mono);">Each 💧 = 500 ml &nbsp;|&nbsp; Target: 7 glasses (3.5 L)</div>
+      <div class="water-track" id="waterTrack">
+        <span class="water-btn" onclick="toggleWater(0)">💧</span>
+        <span class="water-btn" onclick="toggleWater(1)">💧</span>
+        <span class="water-btn" onclick="toggleWater(2)">💧</span>
+        <span class="water-btn" onclick="toggleWater(3)">💧</span>
+        <span class="water-btn" onclick="toggleWater(4)">💧</span>
+        <span class="water-btn" onclick="toggleWater(5)">💧</span>
+        <span class="water-btn" onclick="toggleWater(6)">💧</span>
+        <span class="water-lbl" id="waterLbl">0 / 3.5 L</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRAINING -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">💪</span><h3>Training Log</h3><span class="badge" id="trainingBadge">Not set</span></div>
+    <div class="tcard-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Session Type</label>
+          <select id="train_type" onchange="autosave();updateTrainingBadge()">
+            <option value="">-- Select --</option>
+            <option value="rest">Rest Day (Active Recovery)</option>
+            <option value="phase1_circuit">Phase 1 — Full Circuit</option>
+            <option value="push">Phase 2/3 — Push Day</option>
+            <option value="pull">Phase 2/3 — Pull Day</option>
+            <option value="legs_core">Phase 2/3 — Legs &amp; Core</option>
+            <option value="military">Phase 3 — Military Conditioning</option>
+            <option value="cardio">Cardio Only</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>10-Min Warm-up Done</label>
+          <select id="train_warmup" onchange="autosave()">
+            <option value="">--</option>
+            <option value="yes">✓ Yes — full warm-up</option>
+            <option value="partial">~ Partial</option>
+            <option value="no">✗ Skipped</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nasal Breathing (Cardio)</label>
+          <select id="train_nasal" onchange="autosave()">
+            <option value="">--</option>
+            <option value="yes">✓ Fully nasal</option>
+            <option value="partial">~ Mostly nasal</option>
+            <option value="no">✗ Mouth breathing</option>
+            <option value="na">N/A — no cardio today</option>
+          </select>
+        </div>
+      </div>
+      <div class="ex-hdr"><span>Exercise</span><span>Sets</span><span>Reps / Time</span></div>
+      <div class="ex-row"><span class="ex-name">Push-ups</span><input class="ex-input" id="ex1s" placeholder="3" oninput="autosave()"><input class="ex-input" id="ex1r" placeholder="10" oninput="autosave()"></div>
+      <div class="ex-row"><span class="ex-name">Bodyweight Squats</span><input class="ex-input" id="ex2s" placeholder="3" oninput="autosave()"><input class="ex-input" id="ex2r" placeholder="15" oninput="autosave()"></div>
+      <div class="ex-row"><span class="ex-name">Lunges (each leg)</span><input class="ex-input" id="ex3s" placeholder="3" oninput="autosave()"><input class="ex-input" id="ex3r" placeholder="10" oninput="autosave()"></div>
+      <div class="ex-row"><span class="ex-name">Plank</span><input class="ex-input" id="ex4s" placeholder="3" oninput="autosave()"><input class="ex-input" id="ex4r" placeholder="20 sec" oninput="autosave()"></div>
+      <div class="ex-row"><span class="ex-name">Glute Bridges</span><input class="ex-input" id="ex5s" placeholder="3" oninput="autosave()"><input class="ex-input" id="ex5r" placeholder="10" oninput="autosave()"></div>
+      <div class="ex-row"><span class="ex-name">Burpees / Mountain Climbers</span><input class="ex-input" id="ex6s" placeholder="—" oninput="autosave()"><input class="ex-input" id="ex6r" placeholder="—" oninput="autosave()"></div>
+      <div class="field-row">
+        <div class="field"><label>Cardio Duration (min)</label><input type="number" id="train_cardio_min" placeholder="30" oninput="autosave()"></div>
+        <div class="field"><label>Fasted Morning Walk (Phase 3)</label><select id="train_fasted" onchange="autosave()"><option value="">--</option><option value="yes">✓ Done</option><option value="no">✗ Skipped</option><option value="na">N/A</option></select></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RHINITIS -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">👃</span><h3>Rhinitis &amp; Symptom Log</h3></div>
+    <div class="tcard-body">
+      <div class="field">
+        <label>Rhinitis Severity Today (0 = none, 10 = severe)</label>
+        <div class="rhinitis-scale" id="rhinScale">
+          <span class="rs-btn" onclick="setRhin(this,0)">0</span><span class="rs-btn" onclick="setRhin(this,1)">1</span>
+          <span class="rs-btn" onclick="setRhin(this,2)">2</span><span class="rs-btn" onclick="setRhin(this,3)">3</span>
+          <span class="rs-btn" onclick="setRhin(this,4)">4</span><span class="rs-btn" onclick="setRhin(this,5)">5</span>
+          <span class="rs-btn" onclick="setRhin(this,6)">6</span><span class="rs-btn" onclick="setRhin(this,7)">7</span>
+          <span class="rs-btn" onclick="setRhin(this,8)">8</span><span class="rs-btn" onclick="setRhin(this,9)">9</span>
+          <span class="rs-btn" onclick="setRhin(this,10)">10</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Post-Nasal Drip</label>
+          <select id="sym_pnd" onchange="autosave()">
+            <option value="">--</option>
+            <option value="none">None today</option>
+            <option value="mild">Mild — occasional throat clearing</option>
+            <option value="moderate">Moderate — frequent</option>
+            <option value="severe">Severe — disrupting sleep/activity</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Trigger Identified</label>
+          <input type="text" id="sym_trigger" placeholder="e.g. Dust, cold air, none" oninput="autosave()">
+        </div>
+        <div class="field">
+          <label>Breathlessness During Exercise</label>
+          <select id="sym_breath" onchange="autosave()">
+            <option value="">--</option>
+            <option value="none">None</option>
+            <option value="mild_decon">Mild — deconditioning type (gone in 2-3 min)</option>
+            <option value="rhinitis">Congestion-related only</option>
+            <option value="stopped">Had to stop exercise</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nasal Rinse Pre-Workout</label>
+          <select id="sym_rinse" onchange="autosave()">
+            <option value="">--</option>
+            <option value="yes">✓ Done</option>
+            <option value="no">✗ Skipped</option>
+            <option value="na">N/A — rest day</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLEEP & STRESS -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">🌙</span><h3>Sleep &amp; Stress</h3></div>
+    <div class="tcard-body">
+      <div class="field-row">
+        <div class="field">
+          <label>Sleep Duration (hours)</label>
+          <div class="range-row"><input type="range" min="3" max="10" step="0.5" id="sleep_hrs" value="7" oninput="updateRange('sleep_hrs','sleepVal');autosave()"><span class="range-val" id="sleepVal">7</span></div>
+        </div>
+        <div class="field">
+          <label>Sleep Quality (0–10)</label>
+          <div class="range-row"><input type="range" min="0" max="10" id="sleep_qual" value="7" oninput="updateRange('sleep_qual','sleepQualVal');autosave()"><span class="range-val" id="sleepQualVal">7</span></div>
+        </div>
+        <div class="field">
+          <label>Stress Level (0–10)</label>
+          <div class="range-row"><input type="range" min="0" max="10" id="stress" value="4" oninput="updateRange('stress','stressVal');autosave()"><span class="range-val" id="stressVal">4</span></div>
+        </div>
+        <div class="field">
+          <label>Head Elevated While Sleeping</label>
+          <select id="sleep_elev" onchange="autosave()"><option value="">--</option><option value="yes">✓ Yes</option><option value="no">✗ No</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>10 Min Diaphragmatic Breathing</label>
+          <select id="breath_ex" onchange="autosave()"><option value="">--</option><option value="yes">✓ Done</option><option value="no">✗ Skipped</option></select>
+        </div>
+        <div class="field">
+          <label>Hip Flexor Stretch (5 min)</label>
+          <select id="hip_stretch" onchange="autosave()"><option value="">--</option><option value="yes">✓ Done</option><option value="no">✗ Skipped</option></select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EVENING CHECKLIST -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">🌛</span><h3>Evening Checklist</h3><span class="badge" id="eveningScore">0/5</span></div>
+    <div class="tcard-body">
+      <div class="check-grid">
+        <label class="chk-item" onclick="toggleCheck(this,'evening','no_food_9pm')"><div class="chk-box"></div><span class="chk-txt">No food after 9 PM</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'evening','no_screen_bed')"><div class="chk-box"></div><span class="chk-txt">No screens 30 min before bed</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'evening','breath_done')"><div class="chk-box"></div><span class="chk-txt">Diaphragmatic breathing done</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'evening','tmrw_planned')"><div class="chk-box"></div><span class="chk-txt">Tomorrow's workout planned</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'evening','no_alcohol')"><div class="chk-box"></div><span class="chk-txt">No alcohol today</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- AVOID LOG -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">🚫</span><h3>Avoid Tracker — tick what you successfully avoided today</h3></div>
+    <div class="tcard-body">
+      <div class="check-grid">
+        <label class="chk-item" onclick="toggleCheck(this,'avoid','maida')"><div class="chk-box"></div><span class="chk-txt">Avoided maida / refined flour</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'avoid','packaged_juice')"><div class="chk-box"></div><span class="chk-txt">No packaged juice / soda</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'avoid','fried_snacks')"><div class="chk-box"></div><span class="chk-txt">No deep-fried snacks</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'avoid','excess_sugar')"><div class="chk-box"></div><span class="chk-txt">No excess sugar in tea/coffee</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'avoid','late_eating')"><div class="chk-box"></div><span class="chk-txt">No eating after 9 PM</span></label>
+        <label class="chk-item" onclick="toggleCheck(this,'avoid','alcohol')"><div class="chk-box"></div><span class="chk-txt">No alcohol</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAILY SCORE -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">🎯</span><h3>Today's Adherence Score</h3></div>
+    <div class="tcard-body">
+      <div class="score-section">
+        <div class="score-ring-wrap">
+          <svg width="78" height="78" viewBox="0 0 78 78">
+            <circle cx="39" cy="39" r="32" fill="none" stroke="var(--b2)" stroke-width="7"/>
+            <circle cx="39" cy="39" r="32" fill="none" stroke="var(--blue)" stroke-width="7"
+              stroke-dasharray="201" stroke-dashoffset="201" id="scoreRing" stroke-linecap="round"
+              style="transition:stroke-dashoffset .5s ease"/>
+          </svg>
+          <div class="score-center"><div class="score-num bl" id="scorePct">0</div><div class="score-max">/100</div></div>
+        </div>
+        <div class="score-breakdown">
+          <div class="score-item"><span>Morning</span><span class="bl" id="sc_morning">0/5</span></div>
+          <div class="score-item"><span>Evening</span><span class="bl" id="sc_evening">0/5</span></div>
+          <div class="score-item"><span>Protein ≥120g</span><span class="gr" id="sc_protein">0g</span></div>
+          <div class="score-item"><span>Water ≥3L</span><span class="tl" id="sc_water">0L</span></div>
+          <div class="score-item"><span>Sleep ≥7 hrs</span><span class="pu" id="sc_sleep">0h</span></div>
+          <div class="score-item"><span>Avoids kept</span><span class="am" id="sc_avoid">0/6</span></div>
+          <div class="score-item"><span>Trained</span><span class="gr" id="sc_train">0</span></div>
+          <div class="score-item"><span>Rhinitis ≤5</span><span class="tl" id="sc_rhin">—</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">📓</span><h3>Daily Notes</h3></div>
+    <div class="tcard-body">
+      <div class="field"><label>How I felt / observations / anything to note</label>
+        <textarea id="daily_notes" placeholder="Energy levels, mood, rhinitis pattern, food cravings, workout performance, anything unusual..." oninput="autosave()"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="save-wrap">
+    <button class="save-btn" onclick="saveDay()">💾 Save Day</button>
+    <span class="save-status" id="saveStatus"></span>
+  </div>
+</div>
+
+<!-- ════ TAB: PROGRESS ════ -->
+<div class="tab-content" id="tab-progress">
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title">⚖️ Weight (kg)</div><div class="sparkline" id="chart_weight"></div><div class="spark-x" id="chartx_weight"></div></div>
+    <div class="chart-card"><div class="chart-title">📏 Waist (cm)</div><div class="sparkline" id="chart_waist"></div><div class="spark-x" id="chartx_waist"></div></div>
+    <div class="chart-card"><div class="chart-title">🥩 Protein (g/day)</div><div class="sparkline" id="chart_protein"></div><div class="spark-x" id="chartx_protein"></div></div>
+    <div class="chart-card"><div class="chart-title">😴 Sleep (hrs)</div><div class="sparkline" id="chart_sleep"></div><div class="spark-x" id="chartx_sleep"></div></div>
+    <div class="chart-card"><div class="chart-title">👃 Rhinitis Score</div><div class="sparkline" id="chart_rhin"></div><div class="spark-x" id="chartx_rhin"></div></div>
+    <div class="chart-card"><div class="chart-title">🎯 Adherence Score</div><div class="sparkline" id="chart_adh"></div><div class="spark-x" id="chartx_adh"></div></div>
+    <div class="chart-card"><div class="chart-title">💪 Max Push-ups</div><div class="sparkline" id="chart_pushups"></div><div class="spark-x" id="chartx_pushups"></div></div>
+    <div class="chart-card"><div class="chart-title">🧱 Plank Hold (sec)</div><div class="sparkline" id="chart_plank"></div><div class="spark-x" id="chartx_plank"></div></div>
+  </div>
+  <div class="tcard">
+    <div class="tcard-hdr"><span class="icon">📋</span><h3>Full Log Table</h3></div>
+    <div class="tcard-body" style="overflow-x:auto;padding:0;">
+      <table id="logTable" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;">
+        <thead><tr style="background:var(--s3);">
+          <th style="padding:8px 10px;text-align:left;color:var(--t3);">Day</th>
+          <th style="padding:8px 10px;color:var(--t3);">Date</th>
+          <th style="padding:8px 10px;color:var(--t3);">Weight</th>
+          <th style="padding:8px 10px;color:var(--t3);">Waist</th>
+          <th style="padding:8px 10px;color:var(--t3);">Protein</th>
+          <th style="padding:8px 10px;color:var(--t3);">Sleep</th>
+          <th style="padding:8px 10px;color:var(--t3);">Rhinitis</th>
+          <th style="padding:8px 10px;color:var(--t3);">Push-ups</th>
+          <th style="padding:8px 10px;color:var(--t3);">Plank</th>
+          <th style="padding:8px 10px;color:var(--t3);">Score</th>
+        </tr></thead>
+        <tbody id="logTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════ TAB: REMINDERS ════ -->
+<div class="tab-content" id="tab-remind">
+  <div class="remind-card">
+    <div class="sec-lbl">📌 Daily Reference — Things to Remember &amp; Avoid</div>
+    <div class="remind-grid">
+      <div class="remind-item do">
+        <div class="ri-title">DO EVERY DAY</div>
+        <ul>
+          <li>Saline nasal rinse — morning + pre-workout</li>
+          <li>10 min slow warm-up before every session</li>
+          <li>Breathe through nose during jogging</li>
+          <li>120–140 g protein daily minimum</li>
+          <li>3.0–3.5 L water daily</li>
+          <li>7–8 hours sleep — non-negotiable</li>
+          <li>Vegetables at every main meal</li>
+          <li>Rhinitis medication consistently</li>
+          <li>10 min diaphragmatic breathing</li>
+          <li>Weigh yourself fasted every morning</li>
+        </ul>
+      </div>
+      <div class="remind-item avoid">
+        <div class="ri-title">ALWAYS AVOID</div>
+        <ul>
+          <li>Maida, white bread, biscuits, rusk</li>
+          <li>Packaged juices, sodas, energy drinks</li>
+          <li>Deep-fried snacks — samosa, pakoda, chips</li>
+          <li>Excess sugar in tea/coffee (&gt;2 tsp/cup)</li>
+          <li>Eating after 9 PM</li>
+          <li>Alcohol — directly suppresses fat oxidation</li>
+          <li>Skipping warm-up before exercise</li>
+          <li>Skipping protein at any main meal</li>
+          <li>Sleeping less than 6 hours</li>
+          <li>Judging progress by scale alone</li>
+        </ul>
+      </div>
+      <div class="remind-item do">
+        <div class="ri-title">PROTEIN SOURCES</div>
+        <ul>
+          <li>Eggs — 3–4 whole (don't skip yolk)</li>
+          <li>Chicken breast — 150–200 g per serving</li>
+          <li>Soya chunks — 50 g dry = ~25 g protein</li>
+          <li>Paneer — 100 g = ~18 g (watch cal)</li>
+          <li>Dal / Legumes — moong, masoor, chana</li>
+          <li>Greek curd — 200 g = ~15–20 g (pre-sleep)</li>
+        </ul>
+      </div>
+      <div class="remind-item avoid">
+        <div class="ri-title">RHINITIS MANAGEMENT</div>
+        <ul>
+          <li>Avoid outdoor training at dawn/dusk</li>
+          <li>Train indoors in Weeks 1–3</li>
+          <li>Don't run before rhinitis is controlled</li>
+          <li>Head of bed elevated 15–20 cm</li>
+          <li>Discuss Fluticasone/Mometasone nasal spray</li>
+          <li>Discuss Montelukast with physician</li>
+          <li>Stop if breathless beyond deconditioning type</li>
+        </ul>
+      </div>
+      <div class="remind-item do">
+        <div class="ri-title">PHASE GUIDE</div>
+        <ul>
+          <li><strong>Phase 1 (Wk 1–4):</strong> 4×/week, circuit, walk cardio</li>
+          <li><strong>Phase 2 (Wk 5–10):</strong> 5×/week, push/pull/legs split</li>
+          <li><strong>Phase 3 (Wk 11+):</strong> 5–6×/week, running 2–5 km</li>
+          <li>Add only 2 reps per exercise per week</li>
+          <li>Fasted morning walk from Phase 3 onward</li>
+          <li>Track waist + chest, not just weight</li>
+        </ul>
+      </div>
+      <div class="remind-item do">
+        <div class="ri-title">MILESTONES TO WATCH</div>
+        <ul>
+          <li>Week 2: Rhinitis stabilising, habit forming</li>
+          <li>Week 4: ~1 kg fat loss, endurance up</li>
+          <li>Week 6: Visible abdominal change begins</li>
+          <li>Week 10: 2–3 kg fat lost, clear strength gains</li>
+          <li>Week 16: 5 kg fat, muscle gained, 5 km run</li>
+          <li>Monthly: measure waist, push-ups, plank, HR</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+<div class="toast" id="toast">✓ Saved</div>
+
+<script>
+const START = new Date('2026-03-13');
+const END   = new Date('2026-04-23');
+const TOTAL = 42;
+let allData = {};
+let selectedDate = todayStr();
+let rhinVal = null;
+let waterFilled = 0;
+let checks = { morning:{}, evening:{}, avoid:{} };
+
+function todayStr() { return new Date().toISOString().slice(0,10); }
+function dateToStr(d) { return d.toISOString().slice(0,10); }
+function strToDate(s) { return new Date(s + 'T00:00:00'); }
+function dayNum(s) { return Math.floor((strToDate(s) - START) / 86400000) + 1; }
+function isFuture(s) { return strToDate(s) > new Date(); }
+function inRange(s) { const d = strToDate(s); return d >= START && d <= END; }
+function getPhase(s) { const n = dayNum(s); return n <= 28 ? 1 : 2; }
+function fmtDate(s) { return strToDate(s).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'}); }
+
+function load() { try { allData = JSON.parse(localStorage.getItem('ft_2026') || '{}'); } catch(e) { allData = {}; } }
+function savLS() { localStorage.setItem('ft_2026', JSON.stringify(allData)); }
+
+const phaseDetails = {
+  1:'<strong>Phase 1 — Foundation (Days 1–28, Weeks 1–4):</strong> 4 sessions/week · 30–35 min each. Circuit × 3 rounds: 10 push-ups, 15 squats, 10 lunges/leg, 20-sec plank, 10 glute bridges. Cardio: brisk walk 20–30 min on rest days (no running yet). Priority: rhinitis management, nasal breathing habit, consistent warm-up.',
+  2:'<strong>Phase 2 — Progression (Days 29–42, Weeks 5–6 of this period):</strong> 5 sessions/week · 40–45 min. Push/Pull/Legs split. Interval cardio: 1 min jog : 2 min walk × 8 rounds. Add decline push-ups, door-frame rows, Bulgarian split squats. Keep nasal breathing priority. Increase reps by 2/week.'
+};
+
+function buildCalendar() {
+  const cont = document.getElementById('calMonths');
+  cont.innerHTML = '';
+  const months = {};
+  let cur = new Date(START);
+  while (cur <= END) {
+    const key = cur.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+    if (!months[key]) months[key] = [];
+    months[key].push(dateToStr(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  for (const [month, days] of Object.entries(months)) {
+    const row = document.createElement('div');
+    row.className = 'cal-month-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'cal-month-name';
+    lbl.textContent = month.slice(0,3);
+    row.appendChild(lbl);
+    const dw = document.createElement('div');
+    dw.className = 'cal-days';
+    days.forEach(ds => {
+      const el = document.createElement('div');
+      el.className = 'cd';
+      el.textContent = strToDate(ds).getDate();
+      el.dataset.date = ds;
+      if (ds === todayStr()) el.classList.add('today');
+      if (ds === selectedDate) el.classList.add('selected');
+      if (isFuture(ds)) { el.classList.add('future'); }
+      else {
+        el.onclick = () => { selectedDate = ds; loadDay(); updateCalendar(); };
+        if (allData[ds]) {
+          el.classList.add('has-data');
+          if (calcScore(allData[ds]) >= 70) el.classList.add('full');
+        }
+      }
+      dw.appendChild(el);
+    });
+    row.appendChild(dw);
+    cont.appendChild(row);
+  }
+}
+
+function updateCalendar() {
+  document.querySelectorAll('.cd').forEach(el => el.classList.toggle('selected', el.dataset.date === selectedDate));
+}
+
+function loadDay() {
+  const d = allData[selectedDate] || {};
+  document.getElementById('dateDisp').textContent = 'Day ' + Math.max(dayNum(selectedDate),1) + ' · ' + fmtDate(selectedDate);
+  const ph = getPhase(selectedDate);
+  const pb = document.getElementById('phaseBadge');
+  pb.textContent = 'Phase ' + ph;
+  pb.className = 'phase-badge ph' + (ph === 1 ? '1' : '2');
+  document.getElementById('phaseInfo').innerHTML = phaseDetails[ph];
+
+  checks = JSON.parse(JSON.stringify(d.checks || { morning:{}, evening:{}, avoid:{} }));
+  renderChecks();
+
+  ['weight','waist','chest','waketime','pushups','plank','run','hr'].forEach(f => {
+    const el = document.getElementById('metric_'+f);
+    if (el) el.value = d.metrics?.[f] || '';
+  });
+  ['breakfast','midmorn','lunch','prework','postwork','dinner'].forEach(m => {
+    const me = document.getElementById('meal_'+m);
+    const pe = document.getElementById('prot_'+m);
+    if (me) me.value = d.meals?.[m] || '';
+    if (pe) pe.value = d.meals?.['p_'+m] || '';
+  });
+  updateProtein();
+  waterFilled = d.water || 0;
+  renderWater();
+
+  ['type','warmup','nasal','cardio_min','fasted'].forEach(f => {
+    const el = document.getElementById('train_'+f);
+    if (el) el.value = d.training?.[f] || '';
+  });
+  [1,2,3,4,5,6].forEach(i => {
+    const es = document.getElementById('ex'+i+'s');
+    const er = document.getElementById('ex'+i+'r');
+    if (es) es.value = d.training?.['ex'+i+'s'] || '';
+    if (er) er.value = d.training?.['ex'+i+'r'] || '';
+  });
+  updateTrainingBadge();
+
+  rhinVal = d.rhinitis?.score ?? null;
+  document.getElementById('rhinScale').querySelectorAll('.rs-btn').forEach((btn,i) => {
+    btn.className = 'rs-btn' + (rhinVal === i ? ' sel'+i : '');
+  });
+  ['pnd','trigger','breath','rinse'].forEach(f => {
+    const el = document.getElementById('sym_'+f);
+    if (el) el.value = d.rhinitis?.[f] || '';
+  });
+
+  const sh = d.sleep?.hrs ?? 7, sq = d.sleep?.qual ?? 7, sv = d.sleep?.stress ?? 4;
+  document.getElementById('sleep_hrs').value = sh; document.getElementById('sleepVal').textContent = sh;
+  document.getElementById('sleep_qual').value = sq; document.getElementById('sleepQualVal').textContent = sq;
+  document.getElementById('stress').value = sv; document.getElementById('stressVal').textContent = sv;
+  ['sleep_elev','breath_ex','hip_stretch'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = d.sleep?.[id.replace('_ex','_ex').replace('sleep_','').replace('hip_','hip_')] || d.sleep?.[id] || '';
+  });
+  document.getElementById('daily_notes').value = d.notes || '';
+  updateScore();
+}
+
+function renderChecks() {
+  document.querySelectorAll('.chk-item').forEach(el => {
+    const m = el.getAttribute('onclick')?.match(/'(\w+)','(\w+)'/);
+    if (!m) return;
+    el.classList.toggle('checked', !!checks[m[1]]?.[m[2]]);
+  });
+  updateCheckBadges();
+}
+
+function toggleCheck(el, g, k) {
+  if (!checks[g]) checks[g] = {};
+  checks[g][k] = !checks[g][k];
+  el.classList.toggle('checked', checks[g][k]);
+  updateCheckBadges();
+  updateScore();
+  autosave();
+}
+
+function updateCheckBadges() {
+  const mc = Object.values(checks.morning||{}).filter(Boolean).length;
+  const ec = Object.values(checks.evening||{}).filter(Boolean).length;
+  document.getElementById('morningScore').textContent = mc+'/5';
+  document.getElementById('eveningScore').textContent = ec+'/5';
+}
+
+function toggleWater(i) {
+  waterFilled = waterFilled === i+1 ? i : i+1;
+  renderWater(); autosave(); updateScore();
+}
+function renderWater() {
+  document.querySelectorAll('.water-btn').forEach((b,i) => b.classList.toggle('filled', i < waterFilled));
+  const l = (waterFilled * 0.5).toFixed(1);
+  document.getElementById('waterBadge').textContent = l + ' / 3.5 L';
+  document.getElementById('waterLbl').textContent = l + ' / 3.5 L';
+}
+
+function setRhin(btn, val) {
+  rhinVal = val;
+  document.getElementById('rhinScale').querySelectorAll('.rs-btn').forEach((b,i) => {
+    b.className = 'rs-btn' + (i === val ? ' sel'+val : '');
+  });
+  autosave(); updateScore();
+}
+
+function updateRange(id, dId) { document.getElementById(dId).textContent = document.getElementById(id).value; }
+
+function updateProtein() {
+  const meals = ['breakfast','midmorn','lunch','prework','postwork','dinner'];
+  let total = meals.reduce((s,m) => s + (parseFloat(document.getElementById('prot_'+m)?.value)||0), 0);
+  document.getElementById('proteinTotal').textContent = 'Protein: ' + Math.round(total) + 'g / 130g target';
+  updateScore(); autosave();
+}
+
+function updateTrainingBadge() {
+  const map = {'':'Not set','rest':'Rest Day','phase1_circuit':'Phase 1 Circuit','push':'Push Day','pull':'Pull Day','legs_core':'Legs & Core','military':'Military Cond.','cardio':'Cardio Only'};
+  document.getElementById('trainingBadge').textContent = map[document.getElementById('train_type').value] || '';
+}
+
+function calcScore(d) {
+  let s = 0;
+  const meals = ['breakfast','midmorn','lunch','prework','postwork','dinner'];
+  s += (Object.values(d.checks?.morning||{}).filter(Boolean).length / 5) * 15;
+  s += (Object.values(d.checks?.evening||{}).filter(Boolean).length / 5) * 15;
+  const prot = meals.reduce((t,m) => t + (parseFloat(d.meals?.['p_'+m])||0), 0);
+  if (prot >= 120) s += 15; else if (prot >= 80) s += 8;
+  const water = (d.water||0) * 0.5;
+  if (water >= 3) s += 10; else if (water >= 2) s += 5;
+  const sh = d.sleep?.hrs ?? 0;
+  if (sh >= 7) s += 15; else if (sh >= 6) s += 8;
+  s += (Object.values(d.checks?.avoid||{}).filter(Boolean).length / 6) * 15;
+  if (d.training?.type && d.training.type !== '' && d.training.type !== 'rest') s += 10;
+  const rhin = d.rhinitis?.score ?? 10;
+  if (rhin <= 3) s += 5; else if (rhin <= 5) s += 3;
+  return Math.round(Math.min(s, 100));
+}
+
+function updateScore() {
+  const d = gatherDay();
+  const score = calcScore(d);
+  const circ = 201;
+  document.getElementById('scoreRing').style.strokeDashoffset = circ - (circ * score / 100);
+  const el = document.getElementById('scorePct');
+  el.textContent = score;
+  el.style.color = score >= 70 ? 'var(--green)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+
+  const meals = ['breakfast','midmorn','lunch','prework','postwork','dinner'];
+  const mc = Object.values(checks.morning||{}).filter(Boolean).length;
+  const ec = Object.values(checks.evening||{}).filter(Boolean).length;
+  const ac = Object.values(checks.avoid||{}).filter(Boolean).length;
+  const prot = meals.reduce((t,m) => t + (parseFloat(document.getElementById('prot_'+m)?.value)||0), 0);
+  const sh = parseFloat(document.getElementById('sleep_hrs').value)||0;
+  const trained = document.getElementById('train_type').value;
+  document.getElementById('sc_morning').textContent = mc+'/5';
+  document.getElementById('sc_evening').textContent = ec+'/5';
+  document.getElementById('sc_protein').textContent = prot >= 120 ? '✓ 15pts' : Math.round(prot)+'g';
+  document.getElementById('sc_water').textContent = (waterFilled*0.5) >= 3 ? '✓ 10pts' : (waterFilled*0.5)+'L';
+  document.getElementById('sc_sleep').textContent = sh >= 7 ? '✓ 15pts' : sh+'h';
+  document.getElementById('sc_avoid').textContent = ac+'/6';
+  document.getElementById('sc_train').textContent = (trained && trained !== '' && trained !== 'rest') ? '✓ 10pts' : '0';
+  document.getElementById('sc_rhin').textContent = rhinVal !== null ? (rhinVal <= 5 ? '✓' : rhinVal) : '—';
+}
+
+function gatherDay() {
+  const meals = ['breakfast','midmorn','lunch','prework','postwork','dinner'];
+  const mData = {};
+  meals.forEach(m => { mData[m] = document.getElementById('meal_'+m)?.value||''; mData['p_'+m] = document.getElementById('prot_'+m)?.value||''; });
+  return {
+    checks: JSON.parse(JSON.stringify(checks)),
+    metrics: { weight:document.getElementById('metric_weight').value, waist:document.getElementById('metric_waist').value, chest:document.getElementById('metric_chest').value, waketime:document.getElementById('metric_waketime').value, pushups:document.getElementById('metric_pushups').value, plank:document.getElementById('metric_plank').value, run:document.getElementById('metric_run').value, hr:document.getElementById('metric_hr').value },
+    meals: mData,
+    water: waterFilled,
+    training: { type:document.getElementById('train_type').value, warmup:document.getElementById('train_warmup').value, nasal:document.getElementById('train_nasal').value, cardio_min:document.getElementById('train_cardio_min').value, fasted:document.getElementById('train_fasted').value, ex1s:document.getElementById('ex1s').value, ex1r:document.getElementById('ex1r').value, ex2s:document.getElementById('ex2s').value, ex2r:document.getElementById('ex2r').value, ex3s:document.getElementById('ex3s').value, ex3r:document.getElementById('ex3r').value, ex4s:document.getElementById('ex4s').value, ex4r:document.getElementById('ex4r').value, ex5s:document.getElementById('ex5s').value, ex5r:document.getElementById('ex5r').value, ex6s:document.getElementById('ex6s').value, ex6r:document.getElementById('ex6r').value },
+    rhinitis: { score:rhinVal, pnd:document.getElementById('sym_pnd').value, trigger:document.getElementById('sym_trigger').value, breath:document.getElementById('sym_breath').value, rinse:document.getElementById('sym_rinse').value },
+    sleep: { hrs:parseFloat(document.getElementById('sleep_hrs').value), qual:parseInt(document.getElementById('sleep_qual').value), stress:parseInt(document.getElementById('stress').value), sleep_elev:document.getElementById('sleep_elev').value, breath_ex:document.getElementById('breath_ex').value, hip_stretch:document.getElementById('hip_stretch').value },
+    notes: document.getElementById('daily_notes').value,
+  };
+}
+
+let saveTimer;
+function autosave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { allData[selectedDate] = gatherDay(); savLS(); updateStats(); buildCalendar(); updateCalendar(); }, 1000);
+}
+
+function saveDay() {
+  allData[selectedDate] = gatherDay();
+  savLS();
+  showToast('✓ Day ' + dayNum(selectedDate) + ' saved!');
+  updateStats(); buildCalendar(); updateCalendar();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function updateStats() {
+  const today = todayStr();
+  const n = Math.min(Math.max(dayNum(today), 1), TOTAL);
+  document.getElementById('dayBadge').textContent = 'Day ' + Math.max(dayNum(today),1);
+  const pct = Math.round((Math.min(dayNum(today), TOTAL) / TOTAL) * 100);
+  document.getElementById('progFill').style.width = Math.max(0,pct) + '%';
+  document.getElementById('progPct').textContent = Math.max(0,pct) + '%';
+  document.getElementById('progDays').textContent = 'Day ' + Math.max(dayNum(today),1) + ' of ' + TOTAL;
+
+  const logged = Object.keys(allData).filter(d => inRange(d) && !isFuture(d));
+  document.getElementById('daysLogged').textContent = logged.length;
+  if (logged.length === 0) { ['avgAdh','avgProt','avgSleep','avgRhin'].forEach(id => document.getElementById(id).textContent = '—'); document.getElementById('workoutsDone').textContent = 0; return; }
+  const meals = ['breakfast','midmorn','lunch','prework','postwork','dinner'];
+  let tAdh=0, tProt=0, tSleep=0, tRhin=0, rhinCt=0, wo=0;
+  logged.forEach(ds => {
+    const d = allData[ds];
+    tAdh += calcScore(d);
+    tProt += meals.reduce((s,m) => s + (parseFloat(d.meals?.['p_'+m])||0), 0);
+    tSleep += d.sleep?.hrs || 0;
+    if (d.rhinitis?.score != null) { tRhin += d.rhinitis.score; rhinCt++; }
+    if (d.training?.type && d.training.type !== '' && d.training.type !== 'rest') wo++;
+  });
+  document.getElementById('avgAdh').textContent = Math.round(tAdh/logged.length);
+  document.getElementById('avgProt').textContent = Math.round(tProt/logged.length)+'g';
+  document.getElementById('avgSleep').textContent = (tSleep/logged.length).toFixed(1);
+  document.getElementById('avgRhin').textContent = rhinCt > 0 ? (tRhin/rhinCt).toFixed(1) : '—';
+  document.getElementById('workoutsDone').textContent = wo;
+}
+
+function buildCharts() {
+  const logged = [];
+  let cur = new Date(START);
+  while (cur <= END) { const ds = dateToStr(cur); if (!isFuture(ds) && allData[ds]) logged.push(ds); cur.setDate(cur.getDate()+1); }
+  const meals = ['breakfast','midmorn','lunch','prework','postwork','dinner'];
+  const charts = {
+    weight:  { vals: logged.map(d => parseFloat(allData[d].metrics?.weight)||null),  color:'var(--blue)' },
+    waist:   { vals: logged.map(d => parseFloat(allData[d].metrics?.waist)||null),   color:'var(--amber)' },
+    protein: { vals: logged.map(d => { const v = meals.reduce((s,m)=>s+(parseFloat(allData[d].meals?.['p_'+m])||0),0); return v||null; }), color:'var(--green)' },
+    sleep:   { vals: logged.map(d => allData[d].sleep?.hrs||null),                   color:'var(--teal)' },
+    rhin:    { vals: logged.map(d => allData[d].rhinitis?.score ?? null),             color:'var(--red)' },
+    adh:     { vals: logged.map(d => calcScore(allData[d])),                          color:'var(--blue)' },
+    pushups: { vals: logged.map(d => parseFloat(allData[d].metrics?.pushups)||null), color:'var(--purple)' },
+    plank:   { vals: logged.map(d => parseFloat(allData[d].metrics?.plank)||null),   color:'var(--teal)' },
+  };
+  for (const [key, chart] of Object.entries(charts)) {
+    const el = document.getElementById('chart_'+key);
+    const xl = document.getElementById('chartx_'+key);
+    if (!el) continue;
+    el.innerHTML = ''; if (xl) xl.innerHTML = '';
+    const vals = chart.vals.filter(v => v !== null);
+    if (vals.length === 0) { el.innerHTML = '<span style="font-family:var(--mono);font-size:11px;color:var(--t3);">No data yet — start logging!</span>'; continue; }
+    const max = Math.max(...vals), min = Math.min(...vals), range = max - min || 1;
+    logged.forEach((ds, i) => {
+      const v = chart.vals[i];
+      const bar = document.createElement('div');
+      bar.className = 'spark-bar';
+      bar.style.height = (v !== null ? Math.max(4, ((v-min)/range)*50+6) : 4) + 'px';
+      bar.style.background = v !== null ? chart.color : 'var(--b2)';
+      bar.style.opacity = v !== null ? '0.85' : '0.3';
+      bar.dataset.val = v !== null ? v : '—';
+      el.appendChild(bar);
+      if (xl) { const lbl = document.createElement('span'); lbl.textContent = strToDate(ds).getDate(); xl.appendChild(lbl); }
+    });
+  }
+  const tbody = document.getElementById('logTableBody');
+  tbody.innerHTML = '';
+  logged.forEach(ds => {
+    const d = allData[ds];
+    const prot = meals.reduce((s,m)=>s+(parseFloat(d.meals?.['p_'+m])||0),0);
+    const score = calcScore(d);
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--b1)';
+    const sc = score >= 70 ? 'var(--green)' : score >= 40 ? 'var(--amber)' : 'var(--red)';
+    tr.innerHTML = `<td style="padding:7px 10px;color:var(--t2);">${dayNum(ds)}</td><td style="padding:7px 10px;color:var(--t2);">${strToDate(ds).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</td><td style="padding:7px 10px;text-align:center;color:var(--blue);">${d.metrics?.weight||'—'}</td><td style="padding:7px 10px;text-align:center;color:var(--amber);">${d.metrics?.waist||'—'}</td><td style="padding:7px 10px;text-align:center;color:var(--green);">${Math.round(prot)||'—'}g</td><td style="padding:7px 10px;text-align:center;color:var(--teal);">${d.sleep?.hrs||'—'}h</td><td style="padding:7px 10px;text-align:center;color:var(--red);">${d.rhinitis?.score ?? '—'}</td><td style="padding:7px 10px;text-align:center;">${d.metrics?.pushups||'—'}</td><td style="padding:7px 10px;text-align:center;">${d.metrics?.plank||'—'}s</td><td style="padding:7px 10px;text-align:center;font-weight:700;color:${sc};">${score}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['track','progress','remind'][i] === name));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-'+name));
+  if (name === 'progress') buildCharts();
+}
+
+function offsetDay(delta) {
+  const d = strToDate(selectedDate);
+  d.setDate(d.getDate() + delta);
+  const ds = dateToStr(d);
+  if (ds >= dateToStr(START) && ds <= dateToStr(END)) { selectedDate = ds; loadDay(); updateCalendar(); }
+}
+function goToday() { const t = todayStr(); if (inRange(t)) { selectedDate = t; loadDay(); updateCalendar(); } }
+
+// INIT
+load();
+if (!inRange(todayStr())) selectedDate = dateToStr(START);
+buildCalendar();
+loadDay();
+updateStats();
+</script>
+</body>
+</html>
