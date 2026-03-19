@@ -699,6 +699,18 @@ body{
           <div class="score-center"><div class="score-num" id="scorePct" style="color:var(--blue)">0</div><div class="score-max">/100</div></div>
         </div>
         <div class="score-breakdown">
+          <div class="score-item"><span>Morning</span><span style="color:var(--blue)" id="sc_m">0/4</span></div>
+          <div class="score-item"><span>Evening</span><span style="color:var(--blue)" id="sc_e">0/5</span></div>
+          <div class="score-item"><span>Protein ≥120g</span><span style="color:var(--green)" id="sc_p">—</span></div>
+          <div class="score-item"><span>Calories in range</span><span style="color:var(--teal)" id="sc_cal">—</span></div>
+          <div class="score-item"><span>Sleep ≥7h</span><span style="color:var(--purple)" id="sc_sl">—</span></div>
+          <div class="score-item"><span>Avoids kept</span><span style="color:var(--amber)" id="sc_a">0/6</span></div>
+          <div class="score-item"><span>Trained</span><span style="color:var(--green)" id="sc_t">—</span></div>
+          <div class="score-item"><span>Classes</span><span style="color:var(--teal)" id="sc_cls">—</span></div>
+          <div class="score-item"><span>Steps ≥8k</span><span style="color:var(--purple)" id="sc_steps">—</span></div>
+          <div class="score-item"><span>Skincare</span><span style="color:var(--pink)" id="sc_skin">—</span></div>
+          <div class="score-item"><span>Prayed</span><span style="color:var(--teal)" id="sc_pr">—</span></div>
+          <div class="score-item"><span>Family</span><span style="color:var(--teal)" id="sc_fam">—</span></div>
         </div>
       </div>
     </div>
@@ -887,13 +899,20 @@ function buildMeasSection(){
   const wrap=document.getElementById('measSection');
   if(!wrap)return;
   if(isMeasDay(sel)){
+    // Only build if not already built (avoid wiping live values)
+    if(document.getElementById('m_wa')){
+      // Fields already exist — just update the banner text if needed
+      return;
+    }
+    const waVal=DB[sel]?.met?.wa||'';
+    const chVal=DB[sel]?.met?.ch||'';
     wrap.innerHTML=`
       <div style="background:var(--blueg);border:1px solid var(--blue);border-left:3px solid var(--blue);border-radius:var(--r2);padding:8px 12px;margin-bottom:6px;font-size:11px;color:var(--blue);font-family:var(--mono);">
         📏 <strong>Measurement Day</strong> — log waist & chest today (Day ${dn(sel)})
       </div>
       <div class="field-row">
-        <div class="field"><label>Waist (cm)</label><input type="number" step="0.5" id="m_wa" placeholder="86" value="${DB[sel]?.met?.wa||''}" oninput="autosave()"></div>
-        <div class="field"><label>Chest (cm)</label><input type="number" step="0.5" id="m_ch" placeholder="96" value="${DB[sel]?.met?.ch||''}" oninput="autosave()"></div>
+        <div class="field"><label>Waist (cm)</label><input type="number" step="0.5" id="m_wa" placeholder="86" value="${waVal}" oninput="autosave()"></div>
+        <div class="field"><label>Chest (cm)</label><input type="number" step="0.5" id="m_ch" placeholder="96" value="${chVal}" oninput="autosave()"></div>
       </div>`;
   } else {
     const nxt=getNextMeasDay(sel);
@@ -1008,7 +1027,8 @@ function loadDay(){
   updateTrainingBadge();
 
   rhinVal=d.rhi?.sc??null;
-  document.getElementById('rhinScale').querySelectorAll('.rs-btn').forEach((b,i)=>{b.className='rs-btn'+(rhinVal===i?' sel'+i:'');});
+  const rhinScaleEl=document.getElementById('rhinScale');
+  if(rhinScaleEl)rhinScaleEl.querySelectorAll('.rs-btn').forEach((b,i)=>{b.className='rs-btn'+(rhinVal===i?' sel'+i:'');});
   ['pnd','trig','br','rn'].forEach(f=>{const el=document.getElementById('s_'+f);if(el)el.value=d.rhi?.[f]||'';});
 
   const sh=d.slp?.h??7,sq=d.slp?.q??7,ss=d.slp?.s??4;
@@ -1138,14 +1158,16 @@ function toggleWater(i){waterFilled=waterFilled===i+1?i:i+1;renderWater();autosa
 function renderWater(){
   document.querySelectorAll('.water-btn').forEach((b,i)=>b.classList.toggle('filled',i<waterFilled));
   const l=(waterFilled*.5).toFixed(1);
-  document.getElementById('waterBadge').textContent=l+' / 3.5 L';
-  document.getElementById('waterLbl').textContent=l+' / 3.5 L';
+  const wb=document.getElementById('waterBadge');const wl=document.getElementById('waterLbl');
+  if(wb)wb.textContent=l+' / 3.5 L';
+  if(wl)wl.textContent=l+' / 3.5 L';
 }
 
 // ── RHINITIS ──
 function setRhin(btn,v){
   rhinVal=v;
-  document.getElementById('rhinScale').querySelectorAll('.rs-btn').forEach((b,i)=>{b.className='rs-btn'+(i===v?' sel'+v:'');});
+  const rs=document.getElementById('rhinScale');
+  if(rs)rs.querySelectorAll('.rs-btn').forEach((b,i)=>{b.className='rs-btn'+(i===v?' sel'+v:'');});
   autosave();updateScore();
 }
 
@@ -1212,33 +1234,37 @@ function calcScore(d){
 function updateScore(){
   const d=gatherDay();const sc=calcScore(d);
   const circ=188;
-  document.getElementById('scoreRing').style.strokeDashoffset=circ-(circ*sc/100);
-  const el=document.getElementById('scorePct');el.textContent=sc;
-  el.style.color=sc>=70?'var(--green)':sc>=40?'var(--amber)':'var(--red)';
+  const ring=document.getElementById('scoreRing');
+  const scorePct=document.getElementById('scorePct');
+  if(ring)ring.style.strokeDashoffset=circ-(circ*sc/100);
+  if(scorePct){scorePct.textContent=sc;scorePct.style.color=sc>=70?'var(--green)':sc>=40?'var(--amber)':'var(--red)';}
 
   const meals=['bf','mm','lu','pw','po','di'];
   const mc=Object.values(chk.m||{}).filter(Boolean).length;
   const ec=Object.values(chk.e||{}).filter(Boolean).length;
   const ac=Object.values(chk.a||{}).filter(Boolean).length;
+  const skc=Object.values(chk.sk||{}).filter(Boolean).length;
   const pr=Math.round(meals.reduce((t,m)=>t+(parseFloat(document.getElementById('p_'+m)?.value)||0),0));
   const tc=Math.round(meals.reduce((t,m)=>t+(parseFloat(document.getElementById('c_'+m)?.value)||0),0));
-  const sh=parseFloat(document.getElementById('sl_h').value)||0;
-  const tr=document.getElementById('t_type').value;
+  const sh=parseFloat(document.getElementById('sl_h')?.value)||0;
+  const tr=document.getElementById('t_type')?.value||'';
   const mx=maxClasses(sel);
   const att=Object.keys(classData).filter(k=>!isNaN(k)&&classData[k]).length;
+  const steps=parseInt(document.getElementById('m_steps')?.value||0);
 
-  document.getElementById('sc_m').textContent=mc+'/5';
-  document.getElementById('sc_e').textContent=ec+'/5';
-  document.getElementById('sc_p').textContent=pr>=120?'✓ '+pr+'g':pr+'g ↓';
-  document.getElementById('sc_cal').textContent=tc>=CAL_TARGET_LOW&&tc<=CAL_TARGET_HIGH?'✓ '+tc:tc>0?tc+' kcal':'—';
-  document.getElementById('sc_w').textContent=(waterFilled*.5)>=3?'✓ 3.5L':(waterFilled*.5)+'L';
-  document.getElementById('sc_sl').textContent=sh>=7?'✓ '+sh+'h':sh+'h';
-  document.getElementById('sc_a').textContent=ac+'/6';
-  document.getElementById('sc_t').textContent=(tr&&tr!==''&&tr!=='rest')?'✓':'—';
-  document.getElementById('sc_cls').textContent=mx>0?att+'/'+mx:'Holiday';
-  document.getElementById('sc_pr').textContent=chk.p?.pray?'✓':'—';
-  document.getElementById('sc_fam').textContent=(chk.p?.parents||chk.p?.siblings)?'✓':'—';
-  document.getElementById('sc_r').textContent=rhinVal!==null?(rhinVal<=5?'✓':rhinVal):'—';
+  const setText=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  setText('sc_m',mc+'/4');
+  setText('sc_e',ec+'/5');
+  setText('sc_p',pr>=120?'✓ '+pr+'g':pr>0?pr+'g ↓':'—');
+  setText('sc_cal',tc>=CAL_TARGET_LOW&&tc<=CAL_TARGET_HIGH?'✓ '+tc+'kcal':tc>0?tc+' kcal':'—');
+  setText('sc_sl',sh>=7?'✓ '+sh+'h':sh>0?sh+'h':'—');
+  setText('sc_a',ac+'/6');
+  setText('sc_t',(tr&&tr!==''&&tr!=='rest')?'✓ yes':'—');
+  setText('sc_cls',mx>0?att+'/'+mx:'Holiday');
+  setText('sc_steps',steps>=8000?'✓':steps>0?steps.toLocaleString():'—');
+  setText('sc_skin',skc>=6?'✓':skc>0?skc+'/8':'—');
+  setText('sc_pr',chk.p?.pray?'✓':'—');
+  setText('sc_fam',(chk.p?.parents||chk.p?.siblings)?'✓':'—');
 }
 
 // ── GOALS ──
@@ -1301,7 +1327,7 @@ function gatherDay(){
     met:(()=>{const m={wt:document.getElementById('m_wt').value,wk:document.getElementById('m_wk').value,pu:document.getElementById('m_pu').value,pl:document.getElementById('m_pl').value,ru:document.getElementById('m_ru').value,hr:document.getElementById('m_hr').value,steps:document.getElementById('m_steps').value};if(isMeasDay(sel)){const wa=document.getElementById('m_wa'),ch=document.getElementById('m_ch');if(wa)m.wa=wa.value;if(ch)m.ch=ch.value;}else{const prev=DB[sel];if(prev?.met?.wa)m.wa=prev.met.wa;if(prev?.met?.ch)m.ch=prev.met.ch;}return m;})(),
     nut,wtr:waterFilled,
     tr:{type:document.getElementById('t_type').value,wu:document.getElementById('t_wu').value,nas:document.getElementById('t_nas').value,cm:document.getElementById('t_cm').value,fw:document.getElementById('t_fw').value,e1s:document.getElementById('e1s').value,e1r:document.getElementById('e1r').value,e2s:document.getElementById('e2s').value,e2r:document.getElementById('e2r').value,e3s:document.getElementById('e3s').value,e3r:document.getElementById('e3r').value,e4s:document.getElementById('e4s').value,e4r:document.getElementById('e4r').value,e5s:document.getElementById('e5s').value,e5r:document.getElementById('e5r').value,e6s:document.getElementById('e6s').value,e6r:document.getElementById('e6r').value},
-    rhi:{sc:rhinVal,pnd:document.getElementById('s_pnd').value,trig:document.getElementById('s_trig').value,br:document.getElementById('s_br').value,rn:document.getElementById('s_rn').value},
+    rhi:{sc:rhinVal,pnd:document.getElementById('s_pnd')?.value||'',trig:document.getElementById('s_trig')?.value||'',br:document.getElementById('s_br')?.value||'',rn:document.getElementById('s_rn')?.value||''},
     slp:{h:parseFloat(document.getElementById('sl_h').value),q:parseInt(document.getElementById('sl_q').value),s:parseInt(document.getElementById('sl_s').value),sl_e:document.getElementById('sl_e').value,sl_b:document.getElementById('sl_b').value,sl_hip:document.getElementById('sl_hip').value},
     cls:JSON.parse(JSON.stringify(classData)),
     std:JSON.parse(JSON.stringify(studyData)),
@@ -1325,10 +1351,35 @@ function gatherDay(){
 
 // ── AUTOSAVE ──
 let aT;
-function autosave(){clearTimeout(aT);aT=setTimeout(()=>{DB[sel]=gatherDay();saveDB();updateStats();buildCal();updateCal();},900);}
+function autosave(){
+  clearTimeout(aT);
+  aT=setTimeout(()=>{
+    DB[sel]=gatherDay();
+    saveDB();
+    // Only update lightweight indicators — never rebuild DOM elements the user is typing in
+    updateStats();
+    updateCal();
+    // Update calendar dot for current day only
+    const cd=document.querySelector('.cd[data-d="'+sel+'"]');
+    if(cd){
+      const sc=calcScore(DB[sel]||{});
+      cd.classList.add('has-data');
+      if(sc>=70)cd.classList.add('full');
+      else cd.classList.remove('full');
+    }
+  },800);
+}
 
 // ── SAVE ──
-function saveDay(){DB[sel]=gatherDay();saveDB();showToast('Day '+dn(sel)+' saved!');updateStats();buildCal();updateCal();document.getElementById('saveStatus').textContent='Last saved: '+new Date().toLocaleTimeString();}
+function saveDay(){
+  DB[sel]=gatherDay();
+  saveDB();
+  showToast('Day '+dn(sel)+' saved!');
+  updateStats();
+  buildCal();   // full rebuild only on explicit save
+  updateCal();
+  document.getElementById('saveStatus').textContent='Saved at '+new Date().toLocaleTimeString();
+}
 
 // ── PRINT AS PDF ──
 function printAsPDF(){
